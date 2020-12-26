@@ -44,7 +44,7 @@ int main(int argc, char *argv[]){
     int sd;
     struct sockaddr_in server;
     char msgSv[100];
-    char turn;
+    char tabla[6][7];
     bzero(msgSv,100);
     if (argc != 3){
       printf ("Sintaxa: %s <adresa_server> <port>\n", argv[0]);
@@ -66,8 +66,7 @@ int main(int argc, char *argv[]){
       perror ("[client]Eroare la connect().\n");
       return errno;
     }
-    while(1){  
-      //primul read() de la server
+
       if(read(sd, msgSv, 100) < 0){
         perror("[client] Eroare la read() de la server.\n");
         return errno;
@@ -88,14 +87,12 @@ int main(int argc, char *argv[]){
           else printf("Alegere invalida a culorii. Trebuie sa alegeti ROSU sau GALBEN (R/G): ");
         }
         alegere[strlen(alegere)] = '\0';
-        //primul write() catre server
         write(sd, alegere, 100);
       }
       else{
         printf("Esti al doilea jucator conectat. Asteapta ca primul sa aleaga o culoare.\n");
       }
 
-      //al doilea read() de la server
       if(read(sd, msgSv, 100) < 0){
         perror("[client] Eroare la read() de la server.\n");
         return errno;
@@ -109,7 +106,6 @@ int main(int argc, char *argv[]){
       }
 
       bzero(msgSv, 100);
-      //al treilea read() de la server
       if(read(sd, msgSv, 100) < 0){
         perror("[client] Eroare la read() de la server. \n");
         return errno;
@@ -128,33 +124,35 @@ int main(int argc, char *argv[]){
 
         raspuns[strlen(raspuns)] = '\0';
         printf("INPUT: %s\n", raspuns);
-        //al doilea write() catre server
         write(sd, raspuns, 100);
   
       }
       else{
         printf("%s\n", msgSv);
       }
-  
-      bzero(msgSv, 100);
-      //al patrulea read() de la server
       if(read(sd, msgSv, 100) < 0){
         perror("[client] Eroare la read() de la server. \n");
         return errno;
       }
 
-      printf("%s \n", msgSv);
-      bzero(msgSv,100);
-      //al cincilea read()
-      read(sd, msgSv, 100); //primim matricea
-      afisareTabla(msgSv, strlen(msgSv));
-      char tabla[6][7];
-      prelucrareTabla(msgSv, strlen(msgSv), tabla);  
-      //al saselea read()
-      bzero(msgSv,100);
-      read(sd, msgSv, 100); //ALEGE / ASTEAPTA
-      if(strcmp(msgSv,"Alege") == 0){
-          printf("Alege pe ce coloana vrei sa iti pui piesa (1 - 7): ");
+      if(strncmp(msgSv, "Vei incepe",10) == 0){
+        printf("%s\n", msgSv);
+      }
+
+
+  
+    while(1){  
+      if(read(sd, msgSv, 100) < 0){
+        perror("[client] Eroare la read() de la server.\n");
+        return errno;
+      }
+
+      if(strcmp(msgSv + 42, "1234567") == 0){
+          afisareTabla(msgSv, strlen(msgSv));
+          prelucrareTabla(msgSv, strlen(msgSv), tabla); 
+      } 
+      else if(strcmp(msgSv,"Alege") == 0){
+          printf("Randul tau! Alege pe ce coloana vrei sa iti pui piesa (1 - 7): ");
           int coloana = 0;
           while(1){
             while(1){
@@ -173,7 +171,7 @@ int main(int argc, char *argv[]){
               i--;
             }
             if(i == -1){
-              printf("Coloana invalida, alegeti alta coloana diferita de coloana %d: ", coloana);
+              printf("Coloana invalida, alegeti alta coloana diferita de coloana %d: ", coloana + 1);
             }
             else{
               bzero(msgSv,100);
@@ -181,19 +179,14 @@ int main(int argc, char *argv[]){
               printf("%c TOTUL OK\n", msgSv[0]);
               break;
             }
-            
-
           }
           write(sd, msgSv,100);
-        //verifica daca ai castigat/egalitate
-        //al treilea write()
-        //write(sd, msgSv, 100);
+
+          printf("Asteapta pana cand advresarul face o mutare.\n");
       }
       else if(strcmp(msgSv,"Asteapta") == 0){
-        printf("Asteapta pana cand primul jucator face o mutare.\n");
+        printf("Adversarul tau a mutat! Randul tau!\n");
         bzero(msgSv,100);
-        read(sd, msgSv, 100);
-        printf("Adversarul tau a mutat!\n");
         afisareTabla(msgSv, strlen(msgSv));
         prelucrareTabla(msgSv, strlen(msgSv), tabla);
         printf("Alege pe ce coloana vrei sa iti pui piesa (1 - 7): ");
@@ -215,7 +208,7 @@ int main(int argc, char *argv[]){
               i--;
             }
             if(i == -1){
-              printf("Coloana invalida, alegeti alta coloana diferita de coloana %d: ", coloana);
+              printf("Coloana invalida, alegeti alta coloana diferita de coloana %d: ", coloana + 1);
             }
             else{
               bzero(msgSv,100);
@@ -225,32 +218,59 @@ int main(int argc, char *argv[]){
             
 
           }
-        //verifica daca ai castigat/egalitate
-        //write(sd, msgSv, 100);
         write(sd, msgSv,100);
+        printf("Asteapta pana cand advresarul face o mutare.\n");
       }
-       //TRIMITE P1 alegere /
-
-
-  
-    /*if(read(sd, msgSv,100) < 0){
-      perror("[client] Eroare la read() de la server.\n");
-      return errno;
-    }
-    if(strcmp(msgSv,"alegeColoana") == 0){
-      bzero(msgSv,100);
-      printf("Alegeti un numar de la 1 la 7, reprezentand coloana pe care doriti sa puneti piesa: ");
-      read(stdin, msgSv,100);
-      if(write(sd, msgSv, 100) < 0){
-        perror("[client] Eroare la write() catre server. \n");
-        return errno;
+      else if(strcmp(msgSv, "Ai castigat! Doresti sa mai joci o runda? (DA/NU): ") == 0){
+        printf("%s\n", msgSv);
+        char decizie[10];
+        while(1){
+          scanf("%s", decizie);
+          if(strcmp(decizie, "DA") == 0 || strcmp(decizie, "NU") == 0)
+            break;
+          printf("Alegere gresita! Raspundeti cu DA sau NU: ");
+        }
+        write(sd, decizie,100);
       }
-    }
-    */  break;  
+      else if(strcmp(msgSv, "Ai pierdut! Doresti sa mai joci o runda? (DA/NU): ") == 0){
+        printf("%s\n", msgSv);
+        char decizie[10];
+        while(1){
+          scanf("%s", decizie);
+          if(strcmp(decizie, "DA") == 0 || strcmp(decizie, "NU") == 0)
+            break;
+          printf("Alegere gresita! Raspundeti cu DA sau NU: ");
+        }
+        write(sd, decizie,100);
+      }
+      else if(strcmp(msgSv, "Este egalitate! Doresti sa mai joci o runda? (DA/NU): ") == 0){
+        printf("%s\n", msgSv);
+        char decizie[10];
+        while(1){
+          scanf("%s", decizie);
+          if(strcmp(decizie, "DA") == 0 || strcmp(decizie, "NU") == 0)
+            break;
+          printf("Alegere gresita! Raspundeti cu DA sau NU: ");
+        }
+        write(sd, decizie,100);
+      }
+      else if(strncmp(msgSv, "Scor:",5) == 0){
+        printf("%s", msgSv);
+        printf("\n");
+      }
+      else if(strncmp(msgSv, "Joc", 3) == 0){
+        printf("%s", msgSv);
+        printf("\n");
+      }
+      else if(strcmp(msgSv, "Sfarsit1") == 0){
+        printf("Sfarsit de joc! La revedere!\n");
+        break;
+      }
+      else if(strcmp(msgSv, "Sfarsit2") == 0){
+        printf("Sfarsit de joc! La revedere!\n");
+        break;
+      } 
   }
 
-  close(sd);
-
-
-    
+  close(sd); 
 } 
