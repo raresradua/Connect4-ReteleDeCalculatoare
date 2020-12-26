@@ -557,12 +557,9 @@ int main ()
 	td=(struct thData*)malloc(sizeof(struct thData));	
 	td->idThread=i++;
 	td->jucator1=primul_jucator;
-  td->jucator2=al_doilea_jucator;
+  	td->jucator2=al_doilea_jucator;
 
 	pthread_create(&th[i], NULL, &treat, td);	      
 				
 	}//while    
-}				
-
-
-
+}
