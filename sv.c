@@ -28,7 +28,7 @@ typedef struct jucator{
   char decizie[10];
 }jucator;
 
-char msg[100];
+//char msg[100];
 void createBoard(char board[][7]){
   for(int i = 0; i < 6; i++){
       for(int j = 0; j < 7; j++)
@@ -195,6 +195,104 @@ int castigator(char board[][7], jucator P){
 }
 //static void *treat(void *); /* functia executata de fiecare thread ce realizeaza comunicarea cu clientii */
 //void raspunde(void *);
+void trimiteTabla(thData* tdL, char msg[]){
+	    write(tdL->jucator1, msg, 100); //trimit tabla amandurora
+      write(tdL->jucator2, msg, 100);
+}
+void pregatireTrimitereTabla(char aux[], char boardstr[], char msg[]){
+	          strcat(aux,"1234567"); //
+            strcpy(boardstr,aux);
+            strcpy(msg, boardstr);
+}
+void prelucrareTabla(char tabla[][7], int coloana, jucator* P){
+	  int i = 5;
+      while(i >= 0){
+          if(tabla[i][coloana] == '*')
+          {    
+              tabla[i][coloana] = P->culoare;
+              break;
+          }
+          i--;
+      }
+}
+void prelucrareStringTabla(char aux[], char tabla[][7]){
+	    strcpy(aux,"");
+      for(int i = 0; i<6; i++){
+        	for(int j = 0; j<7; j++){
+          		strncat(aux,&tabla[i][j],1);
+        }
+      }
+}
+void final_castigDecizie(char msg[], thData* tdL, jucator* unu, jucator* doi){
+
+        write(tdL->jucator1, "Ai castigat! Doresti sa mai joci o runda? (DA/NU): ", 100);
+        write(tdL->jucator2, "Ai pierdut! Doresti sa mai joci o runda? (DA/NU): ", 100);
+        
+        read(tdL->jucator1, msg, 100);
+        strcpy(unu->decizie, msg);
+        read(tdL->jucator2, msg, 100);
+        strcpy(doi->decizie, msg);
+}
+void final_castig2Decizie(char msg[], thData* tdL, jucator* unu, jucator* doi){
+
+        write(tdL->jucator2, "Ai castigat! Doresti sa mai joci o runda? (DA/NU): ", 100);
+        write(tdL->jucator1, "Ai pierdut! Doresti sa mai joci o runda? (DA/NU): ", 100);
+        
+        read(tdL->jucator1, msg, 100);
+        strcpy(unu->decizie, msg);
+        read(tdL->jucator2, msg, 100);
+        strcpy(doi->decizie, msg);
+}
+void trimiteScorCastig(jucator *unu, jucator* doi, thData* tdL, char scor[]){
+		    unu->scor ++;
+
+        strcpy(scor,"");
+        sprintf(scor, "Scor: %d - %d. Scorul tau: %d", unu->scor, doi->scor, unu->scor);
+        write(tdL->jucator1, scor, 100);
+        strcpy(scor,"");
+        sprintf(scor, "Scor: %d - %d. Scorul tau: %d", unu->scor, doi->scor, doi->scor);
+        write(tdL->jucator2, scor, 100);
+
+}
+void trimiteScor2Castig(jucator *unu, jucator* doi, thData* tdL, char scor[]){
+		    doi->scor ++;
+
+        strcpy(scor,"");
+        sprintf(scor, "Scor: %d - %d. Scorul tau: %d", unu->scor, doi->scor, unu->scor);
+        write(tdL->jucator1, scor, 100);
+        strcpy(scor,"");
+        sprintf(scor, "Scor: %d - %d. Scorul tau: %d", unu->scor, doi->scor, doi->scor);
+        write(tdL->jucator2, scor, 100);
+
+}
+void trimiteScorEgalitate(jucator* unu, jucator* doi, thData* tdL, char scor[]){
+	          unu->scor ++;
+            doi->scor ++;
+
+            strcpy(scor,"");
+            sprintf(scor, "Scor: jucator1 %d - %d jucator2", unu->scor, doi->scor);
+            write(tdL->jucator1, scor, 100);
+            write(tdL->jucator2, scor, 100);
+}
+void final_egalitateDecizie(jucator *unu, jucator* doi, thData* tdL, char msg[]){
+			      write(tdL->jucator1,"Este egalitate! Doresti sa mai joci o runda? (DA/NU): ", 100);
+            write(tdL->jucator2,"Este egalitate! Doresti sa mai joci o runda? (DA/NU): ", 100);
+           
+            read(tdL->jucator1, msg, 100);
+            strcpy(unu->decizie, msg);
+            read(tdL->jucator2, msg, 100);
+            strcpy(doi->decizie, msg);
+}
+void swapRand(thData* tdL, jucator *unu, jucator* doi){
+	          int auxId = tdL->jucator1;
+            tdL->jucator1 = tdL->jucator2;
+            tdL->jucator2 = auxId;
+
+            int auxScor = unu->scor;
+            unu->scor = doi->scor;
+            doi->scor = auxScor;
+}
+
 void raspunde(void *arg)
 {
   int nr, i=0;
@@ -202,9 +300,10 @@ void raspunde(void *arg)
   tdL= *((struct thData*)arg);
   int castig = 0;
   int egal = 0;
-  int restart = 0;
   char scor[100] = "";
   char buf[100]="";
+  char aux[49]="";
+  char msg[100];
   jucator P1;
   jucator P2;
   P1.scor = 0;
@@ -222,69 +321,38 @@ void raspunde(void *arg)
   while(1){
     while( (castig != 1) && (egal != 1)){
       bzero(msg,100);
-      //trimit tabla si aleg coloana
+ 
       strcpy(msg, boardstr);
-      //al cincilea write()
-      write(tdL.jucator1, msg, 100); //trimit tabla amandurora
-      write(tdL.jucator2, msg, 100);
-      //al saselea write()
+
+      trimiteTabla(&tdL,msg);
+
       write(tdL.jucator1, "Alege", 100);
-      //write(tdL.jucator2, "Asteapta", 100);
+
 
       bzero(msg,100);
 
       //al 3 lea read()
       read(tdL.jucator1, msg, 100);
       int coloana = msg[0] - '0';
-      int i = 5;
-      while(i >= 0){
-          if(tabla[i][coloana] == '*')
-          {    
-              tabla[i][coloana] = P1.culoare;
-              break;
-          }
-          i--;
-      }
 
-      char aux[49]="";
-      for(int i = 0; i<6; i++){
-        for(int j = 0; j<7; j++){
-          strncat(aux,&tabla[i][j],1);
-        }
-      }
+      prelucrareTabla(tabla,coloana,&P1);
+      prelucrareStringTabla(aux, tabla);
+
 
       if(1 == (castig = castigator(tabla,P1))){
-        strcat(aux,"1234567"); //
-        strcpy(boardstr,aux);
-        strcpy(msg, boardstr);
-        write(tdL.jucator2, msg, 100);
-        write(tdL.jucator1, msg, 100); //
 
-        P1.scor ++;
+        pregatireTrimitereTabla(aux, boardstr, msg);
+        trimiteTabla(&tdL,msg); //
 
-        strcpy(scor,"");
-        sprintf(scor, "Scor: jucator1 %d - %d jucator2", P1.scor, P2.scor);
-        write(tdL.jucator1, scor, 100);
-        write(tdL.jucator2, scor, 100);
 
-        write(tdL.jucator1, "Ai castigat! Doresti sa mai joci o runda? (DA/NU): ", 100);
-        write(tdL.jucator2, "Ai pierdut! Doresti sa mai joci o runda? (DA/NU): ", 100);
-        
-        read(tdL.jucator1, msg, 100);
-        strcpy(P1.decizie, msg);
-        read(tdL.jucator2, msg, 100);
-        strcpy(P2.decizie, msg);
+        trimiteScorCastig(&P1, &P2, &tdL, scor);
+
+        final_castigDecizie(msg, &tdL, &P1, &P2);
         if(strcmp(P1.decizie, P2.decizie) == 0 && (strcmp(P1.decizie,"DA") == 0)){
             createBoard(tabla); //cream tabla goala
             strcpy(boardstr,"******************************************1234567");
 
-            int auxId = tdL.jucator1;
-            tdL.jucator1 = tdL.jucator2;
-            tdL.jucator2 = auxId;
-
-            int auxScor = P1.scor;
-            P1.scor = P2.scor;
-            P2.scor = auxScor;
+            swapRand(&tdL, &P1, &P2);
             castig = 0;
             write(tdL.jucator1, "Joc nou! Tu vei incepe primul acum! S-au schimbat culorile!",100);
             write(tdL.jucator2, "Joc nou! Tu vei incepe al doilea acum! S-au schimbat culorile!",100);
@@ -297,39 +365,19 @@ void raspunde(void *arg)
           write(tdL.jucator2,"Sfarsit2", 100);
         }
       }else if(1 == (egal = egalitate(tabla))){
-            strcat(aux,"1234567"); //
-            strcpy(boardstr,aux);
-            strcpy(msg, boardstr);
-            write(tdL.jucator2, msg, 100);
-            write(tdL.jucator1, msg, 100); //
 
-            P1.scor ++;
-            P2.scor ++;
+            pregatireTrimitereTabla(aux, boardstr, msg);
+            trimiteTabla(&tdL,msg); //
 
-            strcpy(scor,"");
-            sprintf(scor, "Scor: jucator1 %d - %d jucator2", P1.scor, P2.scor);
-            write(tdL.jucator1, scor, 100);
-            write(tdL.jucator2, scor, 100);
+            trimiteScorEgalitate(&P1, &P2, &tdL, scor);
 
-            write(tdL.jucator1,"Este egalitate! Doresti sa mai joci o runda? (DA/NU): ", 100);
-            write(tdL.jucator2,"Este egalitate! Doresti sa mai joci o runda? (DA/NU): ", 100);
-           
-            read(tdL.jucator1, msg, 100);
-            strcpy(P1.decizie, msg);
-            read(tdL.jucator2, msg, 100);
-            strcpy(P2.decizie, msg);
+            final_egalitateDecizie(&P1, &P2, &tdL, msg);
             if(strcmp(P1.decizie, P2.decizie) == 0 && (strcmp(P1.decizie,"DA") == 0)){
               printf("joc nou eg1\n");
               createBoard(tabla); //cream tabla goala
               strcpy(boardstr,"******************************************1234567");
 
-              int auxId = tdL.jucator1;
-              tdL.jucator1 = tdL.jucator2;
-              tdL.jucator2 = auxId;
-
-              int auxScor = P1.scor;
-              P1.scor = P2.scor;
-              P2.scor = auxScor;
+              swapRand(&tdL, &P1, &P2);
               egal = 0;
               write(tdL.jucator1, "Joc nou! Tu vei incepe primul acum! S-au schimbat culorile!",100);
               write(tdL.jucator2, "Joc nou! Tu vei incepe al doilea acum! S-au schimbat culorile!",100);
@@ -342,66 +390,31 @@ void raspunde(void *arg)
 
            }
       }else{
-            strcat(aux,"1234567");
-            strcpy(boardstr,aux);
-            strcpy(msg, boardstr);
-            write(tdL.jucator2, msg, 100);
-            write(tdL.jucator1, msg, 100);
+
+            pregatireTrimitereTabla(aux, boardstr, msg);
+            trimiteTabla(&tdL,msg);
             bzero(msg,100);
 
             write(tdL.jucator2, "Asteapta", 100);
             read(tdL.jucator2, msg, 100);
             coloana = msg[0] - '0';
-            i = 5;
-            while(i >= 0){
-                if(tabla[i][coloana] == '*')
-                {    
-                    tabla[i][coloana] = P2.culoare;
-                    break;
-                }
-                i--;
-            }
 
-            strcpy(aux,"");
-            for(int i = 0; i<6; i++){
-              for(int j = 0; j<7; j++){
-                strncat(aux,&tabla[i][j],1);
-              }
-            }
+            prelucrareTabla(tabla,coloana,&P2);
+            prelucrareStringTabla(aux, tabla);
 
             if(1 == (castig = castigator(tabla,P2))){
-            strcat(aux,"1234567"); //
-            strcpy(boardstr,aux);
-            strcpy(msg, boardstr);
-            write(tdL.jucator2, msg, 100);
-            write(tdL.jucator1, msg, 100); //
 
-            P2.scor ++;
+            pregatireTrimitereTabla(aux, boardstr, msg);
+            trimiteTabla(&tdL,msg); //
 
-            strcpy(scor,"");
-            sprintf(scor, "Scor: jucator1 %d - %d jucator2", P1.scor, P2.scor);
-            write(tdL.jucator1, scor, 100);
-            write(tdL.jucator2, scor, 100);
+            trimiteScor2Castig(&P1, &P2, &tdL, scor);
 
-            write(tdL.jucator2, "Ai castigat! Doresti sa mai joci o runda? (DA/NU): ", 100);
-            write(tdL.jucator1, "Ai pierdut! Doresti sa mai joci o runda? (DA/NU): ", 100);
-            
-            read(tdL.jucator1, msg, 100);
-            strcpy(P1.decizie, msg);
-            read(tdL.jucator2, msg, 100);
-            strcpy(P2.decizie, msg);
+            final_castig2Decizie(msg, &tdL, &P1, &P2);
             if(strcmp(P1.decizie, P2.decizie) == 0 && (strcmp(P1.decizie,"DA") == 0)){
-              printf("joc nou castig 2\n");
               createBoard(tabla); //cream tabla goala
               strcpy(boardstr,"******************************************1234567");
 
-              int auxId = tdL.jucator1;
-              tdL.jucator1 = tdL.jucator2;
-              tdL.jucator2 = auxId;
-
-              int auxScor = P1.scor;
-              P1.scor = P2.scor;
-              P2.scor = auxScor;
+              swapRand(&tdL, &P1, &P2);
 
               castig = 0;
               write(tdL.jucator1, "Joc nou! Tu vei incepe primul acum! S-au schimbat culorile!",100);
@@ -414,39 +427,16 @@ void raspunde(void *arg)
               write(tdL.jucator2,"Sfarsit2", 100);
             }
           }else if(1 == (egal = egalitate(tabla))){
-              strcat(aux,"1234567"); //
-              strcpy(boardstr,aux);
-              strcpy(msg, boardstr);
-              write(tdL.jucator2, msg, 100);
-              write(tdL.jucator1, msg, 100); //
+              pregatireTrimitereTabla(aux, boardstr, msg);
+              trimiteTabla(&tdL,msg); //
 
-              P1.scor ++;
-              P2.scor ++;
+              trimiteScorEgalitate(&P1, &P2, &tdL, scor);
 
-              strcpy(scor,"");
-              sprintf(scor, "Scor: jucator1 %d - %d jucator2", P1.scor, P2.scor);
-              write(tdL.jucator1, scor, 100);
-              write(tdL.jucator2, scor, 100);
-
-              write(tdL.jucator1,"Este egalitate! Doresti sa mai joci o runda? (DA/NU): ", 100);
-              write(tdL.jucator2,"Este egalitate! Doresti sa mai joci o runda? (DA/NU): ", 100);
-              
-              read(tdL.jucator1, msg, 100);
-              strcpy(P1.decizie, msg);
-              read(tdL.jucator2, msg, 100);
-              strcpy(P2.decizie, msg);
+              final_egalitateDecizie(&P1, &P2, &tdL, msg);
               if(strcmp(P1.decizie, P2.decizie) == 0 && (strcmp(P1.decizie,"DA") == 0)){
-                printf("Joc nou.\n");
                 createBoard(tabla); //cream tabla goala
                 strcpy(boardstr,"******************************************1234567");
-
-                int auxId = tdL.jucator1;
-                tdL.jucator1 = tdL.jucator2;
-                tdL.jucator2 = auxId;
-
-                int auxScor = P1.scor;
-                P1.scor = P2.scor;
-                P2.scor = auxScor;
+                swapRand(&tdL, &P1, &P2);
 
                 egal = 0;
                 write(tdL.jucator1, "Joc nou! Tu vei incepe primul acum! S-au schimbat culorile!",100);
@@ -459,9 +449,7 @@ void raspunde(void *arg)
                 write(tdL.jucator2,"Sfarsit2", 100);
               }
          }else{
-            strcat(aux,"1234567");
-            strcpy(boardstr,aux);
-            strcpy(msg, boardstr);
+            pregatireTrimitereTabla(aux, boardstr, msg);
           }
       }
     }
@@ -557,9 +545,12 @@ int main ()
 	td=(struct thData*)malloc(sizeof(struct thData));	
 	td->idThread=i++;
 	td->jucator1=primul_jucator;
-  	td->jucator2=al_doilea_jucator;
+  td->jucator2=al_doilea_jucator;
 
 	pthread_create(&th[i], NULL, &treat, td);	      
 				
 	}//while    
-}
+}				
+
+
+
