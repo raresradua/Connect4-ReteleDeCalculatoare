@@ -147,8 +147,13 @@ void alegeRand(thData *tdL, jucator *unu, jucator *doi)
       unu->culoare = doi->culoare;
       doi->culoare = auxCul;
       //ramura else al patrulea write() catre client
-      write(tdL->jucator1, "Vei incepe primul", 100);
-      write(tdL->jucator2, "Vei incepe al doilea, asteapta ca adversarul tau sa mute", 100);
+      if(write(tdL->jucator1, "Vei incepe primul", 100)<=0)
+      {
+        perror("[server] Eroare la write() catre primul jucator conectat.\n");
+      }
+      if(write(tdL->jucator2, "Vei incepe al doilea, asteapta ca adversarul tau sa mute", 100)<=0){
+        perror("[server] Eroare la write() catre al doilea jucator conectat.\n");
+      }
       break;
     }
     else
@@ -425,7 +430,7 @@ void swapRand(thData *tdL, jucator *unu, jucator *doi)
 
 void raspunde(void *arg)
 {
-  int nr, i = 0;
+  int i = 0;
   struct thData tdL;
   tdL = *((struct thData *)arg);
   int castig = 0;
@@ -516,7 +521,7 @@ void raspunde(void *arg)
       {
 
         pregatireTrimitereTabla(aux, boardstr, msg);
-        trimiteTabla(&tdL, msg); //
+        trimiteTabla(&tdL, msg);
 
         trimiteScorverificareEgalitate(&P1, &P2, &tdL, scor);
 
@@ -574,7 +579,7 @@ void raspunde(void *arg)
         {
 
           pregatireTrimitereTabla(aux, boardstr, msg);
-          trimiteTabla(&tdL, msg); //
+          trimiteTabla(&tdL, msg);
 
           trimiteScor2Castig(&P1, &P2, &tdL, scor);
 
@@ -601,7 +606,7 @@ void raspunde(void *arg)
         else if (1 == (egal = verificareEgalitate(tabla)))
         {
           pregatireTrimitereTabla(aux, boardstr, msg);
-          trimiteTabla(&tdL, msg); //
+          trimiteTabla(&tdL, msg);
 
           trimiteScorverificareEgalitate(&P1, &P2, &tdL, scor);
 
@@ -651,7 +656,6 @@ int main()
 {
   struct sockaddr_in server; // structura folosita de server
   struct sockaddr_in from;
-  int nr; //mesajul primit de trimis la client
   int sd; //descriptorul de socket
   int pid;
   pthread_t th[100]; //Identificatorii thread-urilor care se vor crea
@@ -687,7 +691,7 @@ int main()
   }
 
   /* punem serverul sa asculte daca vin clienti sa se conecteze */
-  if (listen(sd, 1) == -1)
+  if (listen(sd, 2) == -1)
   {
     perror("[server]Eroare la listen().\n");
     return errno;
@@ -703,7 +707,7 @@ int main()
     printf("[server]Asteptam la portul %d...\n", PORT);
     fflush(stdout);
 
-    /* acceptam un client (stare blocanta pina la realizarea conexiunii) */
+    /* acceptam doi clienti (stari blocante pana la realizarea conexiunii) */
     if ((primul_jucator = accept(sd, (struct sockaddr *)&from, &length)) < 0)
     {
       perror("[server]Eroare la accept().\n");
