@@ -13,7 +13,12 @@
 #include <sys/types.h>
 
 extern int errno;
-
+void sigintHandler(int sig_num) 
+{ 
+    signal(SIGINT, sigintHandler); 
+    printf("\n Nu puteti forta inchiderea aplicatiei cu CTRL+C, terminati partida! \n"); 
+    fflush(stdout); 
+} 
 void welcome()
 {
   printf("----------WELCOME TO CONNECT FOUR!----------\n");
@@ -192,7 +197,7 @@ int main(int argc, char *argv[])
   }
 
   welcome();
-
+  signal(SIGINT, sigintHandler); 
   alegeCuloare(sd, msgSv, alegere);
   bzero(msgSv, 100);
   alegeRand(sd, msgSv, raspuns);
