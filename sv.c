@@ -466,7 +466,6 @@ void raspunde(void *arg)
 
       bzero(msg, 100);
 
-      //al 3 lea read()
       while (1)
       {
         read(tdL.jucator1, msg, 100);
@@ -726,5 +725,5 @@ int main()
 
     pthread_create(&th[i], NULL, &treat, td);
 
-  } //while
+  }
 }
